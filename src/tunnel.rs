@@ -52,14 +52,17 @@ impl Tunnel {
         };
         let map = format!("{}:{}:{}", new_port, target.host, target.port);
         let jump = format!("{}@{}", jump_server.username, jump_server.host);
+        let jump_port = format!("{}", jump_server.port.unwrap_or(22));
 
-        println!("making tunnel: ssh   -N -L {} {} ", map, jump);
+        println!("making tunnel: ssh   -N -L {} {} -p {}", map, jump, jump_port);
 
         let child = Command::new("ssh")
             .arg("-N")
             .arg("-L")
             .arg(map)
             .arg(jump)
+            .arg("-p")
+            .arg(jump_port)
             .spawn()?;
 
         let addr = SocketAddr::new(ip, new_port);
