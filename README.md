@@ -43,6 +43,15 @@ port = 0
 username = ""
 password = ""
 ```
+
+### Custom Cli
+添加下面的配置到 `.dbcli` 里面
+```toml
+[client]
+mysql = "custom mysql cli" # mycli
+mongo = "custom mongo cli"
+```
+
 ## Use
 ```
 dbcli db_name
