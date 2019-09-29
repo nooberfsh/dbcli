@@ -18,6 +18,7 @@ pub struct Tunnel {
 #[derive(Debug)]
 pub enum TunnelError {
     IO(io::Error),
+    CannotFindAvailablePort,
     BindPort(u16),
 }
 
@@ -26,8 +27,9 @@ fn get_available_port(base: u16, ip: IpAddr) -> Option<u16> {
     while port < std::u16::MAX {
         let addr = SocketAddr::new(ip, port);
         if !is_listen(&addr) {
-            return Some(base);
+            return Some(port);
         }
+        println!("port {} is  used, use next port", port);
         port += 1
     }
     None
@@ -46,12 +48,12 @@ impl Tunnel {
 
         let new_port = match get_available_port(target.port, ip) {
             Some(d) => d,
-            None => return Err(TunnelError::BindPort(target.port)),
+            None => return Err(TunnelError::CannotFindAvailablePort),
         };
         let map = format!("{}:{}:{}", new_port, target.host, target.port);
         let jump = format!("{}@{}", jump_server.username, jump_server.host);
 
-        println!("cmd: ssh   -N -L {} {} ", map, jump);
+        println!("making tunnel: ssh   -N -L {} {} ", map, jump);
 
         let child = Command::new("ssh")
             .arg("-N")
