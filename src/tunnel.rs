@@ -5,6 +5,7 @@ use std::io;
 use std::process::{Child, Command};
 use std::thread::sleep;
 use std::time::Duration;
+use std::net::{TcpStream, SocketAddr, IpAddr, Ipv4Addr};
 
 #[derive(Debug)]
 pub struct Tunnel {
@@ -17,11 +18,19 @@ pub struct Tunnel {
 #[derive(Debug)]
 pub enum TunnelError {
     IO(io::Error),
+    BindPort(u16)
 }
 
 fn get_available_port(base: u16) -> u16 {
     // TODO:
     base
+}
+
+fn is_listen(addr: &SocketAddr) -> bool {
+    match TcpStream::connect(addr) {
+        Ok(_) => true,
+        Err(_) => false
+    }
 }
 
 impl Tunnel {
@@ -39,8 +48,18 @@ impl Tunnel {
             .arg(jump)
             .spawn()?;
 
-        // TODO: make sure child process has started
-        sleep(Duration::from_millis(100));
+        let ip = Ipv4Addr::new(127, 0, 0,1);
+        let addr = SocketAddr::new(IpAddr::V4(ip), new_port);
+        let mut count = 50;
+        while  count > 0 && !is_listen(&addr) {
+            println!("wait for tunnel process to start...");
+            sleep(Duration::from_millis(200));
+            count -= 1;
+        }
+
+        if count == 0 {
+            return Err(TunnelError::BindPort(new_port))
+        }
 
         let ret = Tunnel {
             target,
