@@ -1,13 +1,17 @@
+use std::fs::File;
+use std::io::{self, Read};
+
 use serde_derive::Deserialize;
+use toml::de::Error as TomlError;
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct DBConfig {
+pub struct Config {
     pub jump_server: JumpServer,
     pub mysql_dbs: Option<Vec<MySqlConfig>>,
     pub mongo_dbs: Option<Vec<MongoConfig>>,
 }
 
-impl DBConfig {
+impl Config {
     pub fn find_mysql(&self, name: &str) -> Option<MySqlConfig> {
         for db in self.mysql_dbs.as_ref()? {
             if db.db == name {
@@ -50,4 +54,29 @@ pub struct MongoConfig {
     pub port: u16,
     pub username: String,
     pub password: String
+}
+
+pub enum Error  {
+    IO(io::Error),
+    Toml(TomlError),
+}
+
+pub fn parse(path: &str) -> Result<Config, Error> {
+    let mut file = File::open(path)?;
+    let mut buf = Vec::new();
+    file.read_to_end(&mut buf)?;
+    let ret = toml::from_slice(&buf)?;
+    Ok(ret)
+}
+
+impl From<io::Error> for Error {
+    fn from(e: io::Error) -> Self {
+        Error::IO(e)
+    }
+}
+
+impl From<TomlError> for Error {
+    fn from(e: TomlError) -> Self {
+        Error::Toml(e)
+    }
 }
