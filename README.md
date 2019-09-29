@@ -48,11 +48,11 @@ password = ""
 添加下面的配置到 `.dbcli` 里面
 ```toml
 [client]
-mysql = "custom mysql cli" # mycli
+mysql = "custom mysql cli" # e.g. mycli
 mongo = "custom mongo cli"
 ```
 
-## Use
+## Usage
 ```
 dbcli db_name
 ```
