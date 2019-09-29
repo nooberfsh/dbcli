@@ -2,10 +2,10 @@ use crate::config::JumpServer;
 use crate::HostPort;
 
 use std::io;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
 use std::process::{Child, Command};
 use std::thread::sleep;
 use std::time::Duration;
-use std::net::{TcpStream, SocketAddr, IpAddr, Ipv4Addr};
 
 #[derive(Debug)]
 pub struct Tunnel {
@@ -18,24 +18,36 @@ pub struct Tunnel {
 #[derive(Debug)]
 pub enum TunnelError {
     IO(io::Error),
-    BindPort(u16)
+    BindPort(u16),
 }
 
-fn get_available_port(base: u16) -> u16 {
-    // TODO:
-    base
+fn get_available_port(base: u16, ip: IpAddr) -> Option<u16> {
+    let mut port = base;
+    while port < std::u16::MAX {
+        let addr = SocketAddr::new(ip, port);
+        if !is_listen(&addr) {
+            return Some(base);
+        }
+        port += 1
+    }
+    None
 }
 
 fn is_listen(addr: &SocketAddr) -> bool {
     match TcpStream::connect(addr) {
         Ok(_) => true,
-        Err(_) => false
+        Err(_) => false,
     }
 }
 
 impl Tunnel {
     pub fn make(target: HostPort, jump_server: JumpServer) -> Result<Tunnel, TunnelError> {
-        let new_port = get_available_port(target.port);
+        let ip = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
+
+        let new_port = match get_available_port(target.port, ip) {
+            Some(d) => d,
+            None => return Err(TunnelError::BindPort(target.port)),
+        };
         let map = format!("{}:{}:{}", new_port, target.host, target.port);
         let jump = format!("{}@{}", jump_server.username, jump_server.host);
 
@@ -48,17 +60,16 @@ impl Tunnel {
             .arg(jump)
             .spawn()?;
 
-        let ip = Ipv4Addr::new(127, 0, 0,1);
-        let addr = SocketAddr::new(IpAddr::V4(ip), new_port);
+        let addr = SocketAddr::new(ip, new_port);
         let mut count = 50;
-        while  count > 0 && !is_listen(&addr) {
+        while count > 0 && !is_listen(&addr) {
             println!("wait for tunnel process to start...");
             sleep(Duration::from_millis(200));
             count -= 1;
         }
 
         if count == 0 {
-            return Err(TunnelError::BindPort(new_port))
+            return Err(TunnelError::BindPort(new_port));
         }
 
         let ret = Tunnel {
