@@ -10,6 +10,7 @@ pub struct Config {
     pub jump_server: JumpServer,
     pub mysql: Option<Vec<MySqlConfig>>,
     pub mongo: Option<Vec<MongoConfig>>,
+    pub client: Option<Client>,
 }
 
 impl Config {
@@ -37,6 +38,12 @@ pub struct JumpServer {
     pub username: String,
     pub host: String,
     pub port: Option<u16>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Client {
+    pub mysql: Option<String>,
+    pub mongo: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]

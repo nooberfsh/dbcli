@@ -51,21 +51,29 @@ fn main() {
             host: db.host.clone(),
             port: db.port,
         };
-        with_tunnel(hp, js, |tunnel| handle_mysql(tunnel, db)).unwrap()
+        let cli = match config.client.map(|r| r.mysql.clone()) {
+            Some(Some(d)) => d,
+            _ => "mysql".into(),
+        };
+        with_tunnel(hp, js, |tunnel| handle_mysql(tunnel, db, cli)).unwrap()
     } else if let Some(db) = config.find_mongo(&db) {
         let hp = HostPort {
             host: db.host.clone(),
             port: db.port,
         };
-        with_tunnel(hp, js, |tunnel| handle_mongo(tunnel, db)).unwrap()
+        let cli = match config.client.map(|r| r.mongo.clone()) {
+            Some(Some(d)) => d,
+            _ => "mongo".into(),
+        };
+        with_tunnel(hp, js, |tunnel| handle_mongo(tunnel, db, cli)).unwrap()
     } else {
         println!("can not find db: {} in config file!", db)
     }
 }
 
-fn handle_mysql(tunnel: &tunnel::Tunnel, config: MySqlConfig) {
+fn handle_mysql(tunnel: &tunnel::Tunnel, config: MySqlConfig, cli: String) {
     let proxy = tunnel.tunnel();
-    Command::new("mysql")
+    Command::new(cli)
         .arg(format!("-P{}", proxy.port))
         .arg(format!("-h{}", proxy.host))
         .arg(format!("-u{}", &config.username))
@@ -78,10 +86,10 @@ fn handle_mysql(tunnel: &tunnel::Tunnel, config: MySqlConfig) {
         .expect("execute mysql failed");
 }
 
-fn handle_mongo(tunnel: &tunnel::Tunnel, config: MongoConfig) {
+fn handle_mongo(tunnel: &tunnel::Tunnel, config: MongoConfig, cli: String) {
     let proxy = tunnel.tunnel();
     let db = format!("{}:{}/{}", proxy.host, proxy.port, config.db);
-    Command::new("mongo")
+    Command::new(cli)
         .arg(db)
         .arg("-u")
         .arg(config.username)

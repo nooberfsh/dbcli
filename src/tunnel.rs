@@ -54,7 +54,10 @@ impl Tunnel {
         let jump = format!("{}@{}", jump_server.username, jump_server.host);
         let jump_port = format!("{}", jump_server.port.unwrap_or(22));
 
-        println!("making tunnel: ssh   -N -L {} {} -p {}", map, jump, jump_port);
+        println!(
+            "making tunnel: ssh   -N -L {} {} -p {}",
+            map, jump, jump_port
+        );
 
         let child = Command::new("ssh")
             .arg("-N")
