@@ -65,7 +65,7 @@ fn main() {
 
 fn handle_mysql(tunnel: &tunnel::Tunnel, config: MySqlConfig) {
     let proxy = tunnel.tunnel();
-    Command::new("mycli")
+    Command::new("mysql")
         .arg(format!("-P{}", proxy.port))
         .arg(format!("-h{}", proxy.host))
         .arg(format!("-u{}", &config.username))
