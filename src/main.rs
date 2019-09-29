@@ -36,8 +36,12 @@ fn main() {
     config_path.push(".dbcli");
     let config = match config::parse(&config_path) {
         Ok(d) => d,
-        Err(config::Error::IO(e)) => panic!("parse config: {:?} failed, reason: {:?}", config_path, e),
-        Err(config::Error::Toml(e)) => panic!("parse config: {:?} failed, reason: {:?}", config_path, e),
+        Err(config::Error::IO(e)) => {
+            panic!("parse config: {:?} failed, reason: {:?}", config_path, e)
+        }
+        Err(config::Error::Toml(e)) => {
+            panic!("parse config: {:?} failed, reason: {:?}", config_path, e)
+        }
     };
 
     let js = config.jump_server.clone();
