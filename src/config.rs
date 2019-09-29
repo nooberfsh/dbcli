@@ -8,13 +8,13 @@ use toml::de::Error as TomlError;
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {
     pub jump_server: JumpServer,
-    pub mysql_dbs: Option<Vec<MySqlConfig>>,
-    pub mongo_dbs: Option<Vec<MongoConfig>>,
+    pub mysql: Option<Vec<MySqlConfig>>,
+    pub mongo: Option<Vec<MongoConfig>>,
 }
 
 impl Config {
     pub fn find_mysql(&self, name: &str) -> Option<MySqlConfig> {
-        for db in self.mysql_dbs.as_ref()? {
+        for db in self.mysql.as_ref()? {
             if db.db == name {
                 return Some(db.clone());
             }
@@ -23,7 +23,7 @@ impl Config {
     }
 
     pub fn find_mongo(&self, name: &str) -> Option<MongoConfig> {
-        for db in self.mongo_dbs.as_ref()? {
+        for db in self.mongo.as_ref()? {
             if db.db == name {
                 return Some(db.clone());
             }
