@@ -4,7 +4,7 @@ mod tunnel;
 use std::env::args;
 use std::process::{Command, Stdio};
 
-use crate::config::{JumpServer, MySqlConfig};
+use crate::config::{JumpServer, MongoConfig, MySqlConfig};
 
 #[derive(Debug, Clone)]
 pub struct HostPort {
@@ -52,7 +52,12 @@ fn main() {
             port: db.port,
         };
         with_tunnel(hp, js, |tunnel| handle_mysql(tunnel, db)).unwrap()
-    } else if let Some(_db) = config.find_mongo(&db) {
+    } else if let Some(db) = config.find_mongo(&db) {
+        let hp = HostPort {
+            host: db.host.clone(),
+            port: db.port,
+        };
+        with_tunnel(hp, js, |tunnel| handle_mongo(tunnel, db)).unwrap()
     } else {
         println!("can not find db: {} in config file!", db)
     }
@@ -71,4 +76,22 @@ fn handle_mysql(tunnel: &tunnel::Tunnel, config: MySqlConfig) {
         .stderr(Stdio::inherit())
         .status()
         .expect("execute mysql failed");
+}
+
+fn handle_mongo(tunnel: &tunnel::Tunnel, config: MongoConfig) {
+    let proxy = tunnel.tunnel();
+    let db = format!("{}:{}/{}", proxy.host, proxy.port, config.db);
+    Command::new("mongo")
+        .arg(db)
+        .arg("-u")
+        .arg(config.username)
+        .arg("-p")
+        .arg(config.password)
+        .arg("--authenticationDatabase")
+        .arg("admin")
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()
+        .expect("execute mongo failed");
 }
