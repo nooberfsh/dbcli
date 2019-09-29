@@ -1,9 +1,10 @@
 use crate::config::JumpServer;
 use crate::HostPort;
 
-use std::process::{Command, Child};
 use std::io;
-use std::process::Stdio;
+use std::process::{Child, Command};
+use std::thread::sleep;
+use std::time::Duration;
 
 #[derive(Debug)]
 pub struct Tunnel {
@@ -14,7 +15,7 @@ pub struct Tunnel {
 }
 
 #[derive(Debug)]
-pub enum TunnelError  {
+pub enum TunnelError {
     IO(io::Error),
 }
 
@@ -38,16 +39,19 @@ impl Tunnel {
             .arg(jump)
             .spawn()?;
 
-            let ret = Tunnel {
-                target,
-                jump_server,
-                child,
-                tunnel: HostPort {
-                    host: "127.0.0.1".to_string(),
-                    port: new_port
-                }
-            };
-            Ok(ret)
+        // TODO: make sure child process has started
+        sleep(Duration::from_millis(100));
+
+        let ret = Tunnel {
+            target,
+            jump_server,
+            child,
+            tunnel: HostPort {
+                host: "127.0.0.1".to_string(),
+                port: new_port,
+            },
+        };
+        Ok(ret)
     }
 
     pub fn tunnel(&self) -> HostPort {

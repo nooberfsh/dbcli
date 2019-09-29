@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::{self, Read};
 
 use serde_derive::Deserialize;
+use std::path::Path;
 use toml::de::Error as TomlError;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -15,7 +16,7 @@ impl Config {
     pub fn find_mysql(&self, name: &str) -> Option<MySqlConfig> {
         for db in self.mysql_dbs.as_ref()? {
             if db.db == name {
-                return Some(db.clone())
+                return Some(db.clone());
             }
         }
         None
@@ -24,7 +25,7 @@ impl Config {
     pub fn find_mongo(&self, name: &str) -> Option<MongoConfig> {
         for db in self.mongo_dbs.as_ref()? {
             if db.db == name {
-                return Some(db.clone())
+                return Some(db.clone());
             }
         }
         None
@@ -44,7 +45,7 @@ pub struct MySqlConfig {
     pub host: String,
     pub port: u16,
     pub username: String,
-    pub password: String
+    pub password: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -53,15 +54,16 @@ pub struct MongoConfig {
     pub host: String,
     pub port: u16,
     pub username: String,
-    pub password: String
+    pub password: String,
 }
 
-pub enum Error  {
+#[derive(Debug)]
+pub enum Error {
     IO(io::Error),
     Toml(TomlError),
 }
 
-pub fn parse(path: &str) -> Result<Config, Error> {
+pub fn parse<P: AsRef<Path>>(path: P) -> Result<Config, Error> {
     let mut file = File::open(path)?;
     let mut buf = Vec::new();
     file.read_to_end(&mut buf)?;
