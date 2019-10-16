@@ -10,6 +10,7 @@ pub struct Config {
     pub jump_server: JumpServer,
     pub mysql: Option<Vec<MySqlConfig>>,
     pub mongo: Option<Vec<MongoConfig>>,
+    pub presto: Option<Vec<PrestoConfig>>,
     pub client: Option<Client>,
 }
 
@@ -31,6 +32,15 @@ impl Config {
         }
         None
     }
+
+    pub fn find_presto(&self, name: &str) -> Option<PrestoConfig> {
+        for db in self.presto.as_ref()? {
+            if db.db == name {
+                return Some(db.clone());
+            }
+        }
+        None
+    }
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -44,6 +54,7 @@ pub struct JumpServer {
 pub struct Client {
     pub mysql: Option<String>,
     pub mongo: Option<String>,
+    pub presto: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -62,6 +73,16 @@ pub struct MongoConfig {
     pub port: u16,
     pub username: String,
     pub password: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct PrestoConfig {
+    pub db: String,
+    pub host: String,
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+    pub catalog: String,
 }
 
 #[derive(Debug)]

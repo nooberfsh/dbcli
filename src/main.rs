@@ -4,7 +4,7 @@ mod tunnel;
 use std::env::args;
 use std::process::{Command, Stdio};
 
-use crate::config::{JumpServer, MongoConfig, MySqlConfig};
+use crate::config::{JumpServer, MongoConfig, MySqlConfig, PrestoConfig};
 
 #[derive(Debug, Clone)]
 pub struct HostPort {
@@ -47,6 +47,7 @@ fn main() {
     let js = config.jump_server.clone();
 
     if let Some(db) = config.find_mysql(&db) {
+        println!("find mysql db config: {}", db.db);
         let hp = HostPort {
             host: db.host.clone(),
             port: db.port,
@@ -57,6 +58,7 @@ fn main() {
         };
         with_tunnel(hp, js, |tunnel| handle_mysql(tunnel, db, cli)).unwrap()
     } else if let Some(db) = config.find_mongo(&db) {
+        println!("find mongo db config: {}", db.db);
         let hp = HostPort {
             host: db.host.clone(),
             port: db.port,
@@ -66,6 +68,17 @@ fn main() {
             _ => "mongo".into(),
         };
         with_tunnel(hp, js, |tunnel| handle_mongo(tunnel, db, cli)).unwrap()
+    } else if let Some(db) = config.find_presto(&db) {
+        println!("find presto db config: {}", db.db);
+        let hp = HostPort {
+            host: db.host.clone(),
+            port: db.port,
+        };
+        let cli = match config.client.map(|r| r.presto.clone()) {
+            Some(Some(d)) => d,
+            _ => "presto".into(),
+        };
+        with_tunnel(hp, js, |tunnel| handle_presto(tunnel, db, cli)).unwrap()
     } else {
         println!("can not find db: {} in config file!", db)
     }
@@ -102,4 +115,28 @@ fn handle_mongo(tunnel: &tunnel::Tunnel, config: MongoConfig, cli: String) {
         .stderr(Stdio::inherit())
         .status()
         .expect("execute mongo failed");
+}
+
+fn handle_presto(tunnel: &tunnel::Tunnel, config: PrestoConfig, cli: String) {
+    let proxy = tunnel.tunnel();
+    let addr = format!("{}:{}", proxy.host, proxy.port);
+    let mut cmd = Command::new(cli);
+    cmd.arg("--server")
+        .arg(addr)
+        .arg("--user")
+        .arg(config.username)
+        .arg("--catalog")
+        .arg(config.catalog)
+        .arg("--schema")
+        .arg(config.db);
+
+    if !config.password.is_empty() {
+        cmd.arg("--password").arg(config.password);
+    }
+
+    cmd.stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()
+        .expect("execute presto failed");
 }
